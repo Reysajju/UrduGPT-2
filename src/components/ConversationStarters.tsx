@@ -13,9 +13,9 @@ export function ConversationStarters({ starters, onSelect }: ConversationStarter
   const { floatingRefs } = useFloatingAnimation(starters.length);
 
   const handleSelect = (starter: ConversationStarter) => {
+    if (selectedId !== null) return; // Prevent multiple selections
     setSelectedId(starter.id);
-    // Add a small delay for the animation to complete
-    setTimeout(() => onSelect(starter.text), 300);
+    onSelect(starter.text);
   };
 
   return (
@@ -32,11 +32,12 @@ export function ConversationStarters({ starters, onSelect }: ConversationStarter
             className={`
               group relative transform transition-all duration-300 ease-out
               hover:translate-y-[-4px] hover:scale-[1.02]
-              ${selectedId === starter.id ? 'scale-[0.98] opacity-75' : ''}
+              ${selectedId === starter.id ? 'scale-[0.98] opacity-75 pointer-events-none' : ''}
             `}
           >
             <button
               onClick={() => handleSelect(starter)}
+              disabled={selectedId !== null}
               className={`
                 relative w-full max-w-[300px] mx-auto
                 bg-white/10 backdrop-blur-[10px]
@@ -48,16 +49,15 @@ export function ConversationStarters({ starters, onSelect }: ConversationStarter
                 group-hover:border-white/30
                 group-hover:shadow-lg group-hover:shadow-white/5
                 active:scale-95
+                disabled:opacity-50 disabled:cursor-not-allowed
               `}
               style={{ direction: 'rtl' }}
             >
-              {/* Ripple effect container */}
               <div className="absolute inset-0 overflow-hidden rounded-xl">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-ripple" />
               </div>
 
-              {/* Content */}
               <div className="relative flex items-start gap-3">
                 <MessageSquare className="w-5 h-5 text-sky-400/70 flex-shrink-0 mt-1" />
                 <span className="text-white/90 text-lg font-medium leading-relaxed">
@@ -65,7 +65,6 @@ export function ConversationStarters({ starters, onSelect }: ConversationStarter
                 </span>
               </div>
 
-              {/* Hover pulse effect */}
               <div className="absolute inset-0 rounded-xl bg-white/5 opacity-0 group-hover:opacity-100 group-hover:animate-pulse transition-opacity duration-300" />
             </button>
           </div>

@@ -2,23 +2,24 @@ import { ChatStorage, Message, StorageManager } from '../types';
 
 const STORAGE_KEY = 'chat_history';
 const STORAGE_VERSION = 1;
-const MAX_MESSAGES = 100; // Maximum number of messages to store
-const MESSAGE_RETENTION_DAYS = 30; // Number of days to keep messages
+const MAX_MESSAGES = 100;
+const MESSAGE_RETENTION_DAYS = 30;
 
 class LocalStorageManager implements StorageManager {
   private async getStorage(): Promise<ChatStorage> {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
       if (!data) {
-        return { version: STORAGE_VERSION, messages: [] };
+        const initialStorage = { version: STORAGE_VERSION, messages: [] };
+        await this.setStorage(initialStorage);
+        return initialStorage;
       }
 
       const storage: ChatStorage = JSON.parse(data);
       
-      // Handle version updates if needed
       if (storage.version < STORAGE_VERSION) {
-        // Implement migration logic here when needed
         storage.version = STORAGE_VERSION;
+        await this.setStorage(storage);
       }
 
       return storage;
@@ -39,15 +40,19 @@ class LocalStorageManager implements StorageManager {
 
   async getMessages(): Promise<Message[]> {
     const storage = await this.getStorage();
-    return storage.messages;
+    return storage.messages || [];
   }
 
   async saveMessage(message: Message): Promise<void> {
     const storage = await this.getStorage();
     
+    // Ensure messages array exists
+    if (!storage.messages) {
+      storage.messages = [];
+    }
+    
     storage.messages.push(message);
     
-    // Trim messages if exceeding maximum
     if (storage.messages.length > MAX_MESSAGES) {
       storage.messages = storage.messages.slice(-MAX_MESSAGES);
     }
@@ -59,7 +64,12 @@ class LocalStorageManager implements StorageManager {
     const storage = await this.getStorage();
     const cutoffDate = Date.now() - (MESSAGE_RETENTION_DAYS * 24 * 60 * 60 * 1000);
     
-    storage.messages = storage.messages.filter(msg => msg.timestamp >= cutoffDate);
+    if (!storage.messages) {
+      storage.messages = [];
+    } else {
+      storage.messages = storage.messages.filter(msg => msg.timestamp >= cutoffDate);
+    }
+    
     await this.setStorage(storage);
   }
 }

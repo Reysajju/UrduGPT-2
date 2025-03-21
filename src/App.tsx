@@ -10,17 +10,17 @@ import { SettingsMenu } from './components/SettingsMenu';
 import { MessageStatus } from './components/MessageStatus';
 import { ConversationStarters } from './components/ConversationStarters';
 import { conversationStarters } from './utils/conversationStarters';
+import { MessageInput } from './components/MessageInput';
 
 function App() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const { sounds } = useSettingsStore();
 
-  // Get 3 random conversation starters
   const getRandomStarters = () => {
     const shuffled = [...conversationStarters].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, 3);
@@ -29,7 +29,6 @@ function App() {
   const [randomStarters] = useState(getRandomStarters());
 
   useEffect(() => {
-    // Update document title based on unread messages
     document.title = messages.length > 0 
       ? `(${messages.length}) UrduGPT - Magnates Empire`
       : 'UrduGPT - Magnates Empire';
@@ -37,15 +36,18 @@ function App() {
     const loadMessages = async () => {
       try {
         const storedMessages = await storageManager.getMessages();
-        setMessages(storedMessages);
+        if (storedMessages && storedMessages.length > 0) {
+          setMessages(storedMessages);
+        }
       } catch (error) {
         console.error('Failed to load messages:', error);
+        setError('Failed to load messages. Please refresh the page.');
       }
     };
 
     loadMessages();
     storageManager.clearOldMessages();
-  }, [messages.length]);
+  }, []);
 
   useEffect(() => {
     if (chatAreaRef.current) {
@@ -59,20 +61,19 @@ function App() {
     ));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim()) return;
+  const handleMessageSubmit = async (text: string) => {
+    if (!text.trim()) return;
 
+    setError(null);
     const messageId = crypto.randomUUID();
     const userMessage: Message = {
       id: messageId,
-      text: input.trim(),
+      text: text.trim(),
       sender: 'user',
       timestamp: Date.now(),
       status: 'sending'
     };
 
-    setInput('');
     setMessages(prev => [...prev, userMessage]);
     await storageManager.saveMessage(userMessage);
 
@@ -105,6 +106,7 @@ function App() {
     } catch (error) {
       console.error('Error:', error);
       await updateMessageStatus(messageId, 'failed');
+      setError('Failed to generate response. Please try again.');
       const errorMessage: Message = {
         id: crypto.randomUUID(),
         text: 'معاف کیجیے، کچھ گڑبڑ ہو گئی۔',
@@ -116,11 +118,6 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleStarterSelect = (text: string) => {
-    setInput(text);
-    handleSubmit({ preventDefault: () => {} } as React.FormEvent);
   };
 
   return (
@@ -154,10 +151,16 @@ function App() {
             aria-live="polite"
             aria-label="Chat messages"
           >
+            {error && (
+              <div className="bg-red-500/10 text-red-300 p-4 rounded-lg">
+                {error}
+              </div>
+            )}
+
             {messages.length === 0 && (
               <ConversationStarters
                 starters={randomStarters}
-                onSelect={handleStarterSelect}
+                onSelect={handleMessageSubmit}
               />
             )}
             
@@ -173,7 +176,7 @@ function App() {
                       : 'bg-white/90 backdrop-blur-sm text-gray-800 rounded-bl-none'
                   }`}
                 >
-                  <div className="mb-1">{message.text}</div>
+                  <div className="mb-1 whitespace-pre-wrap break-words">{message.text}</div>
                   <div className="text-xs opacity-75 flex items-center gap-1">
                     <span>{new Date(message.timestamp).toLocaleTimeString()}</span>
                     {message.sender === 'user' && message.status && (
@@ -192,30 +195,10 @@ function App() {
             )}
           </div>
 
-          <form onSubmit={handleSubmit} className="p-4 border-t border-white/10 bg-[#001F3F]/80 backdrop-blur-sm">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your message..."
-                className="flex-1 px-4 py-2 rounded-full border border-white/20 bg-white/10 text-white placeholder-white/50 focus:outline-none focus:border-sky-400"
-                aria-label="Message input"
-              />
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="bg-sky-500 text-white p-2 rounded-full hover:bg-sky-600 transition-colors disabled:opacity-50"
-                aria-label="Send message"
-              >
-                {isLoading ? (
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                ) : (
-                  <Send className="w-6 h-6" />
-                )}
-              </button>
-            </div>
-          </form>
+          <MessageInput
+            onSubmit={handleMessageSubmit}
+            isLoading={isLoading}
+          />
         </div>
       </main>
     </div>
