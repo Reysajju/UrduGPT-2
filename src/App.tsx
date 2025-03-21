@@ -29,6 +29,11 @@ function App() {
   const [randomStarters] = useState(getRandomStarters());
 
   useEffect(() => {
+    // Update document title based on unread messages
+    document.title = messages.length > 0 
+      ? `(${messages.length}) UrduGPT - Magnates Empire`
+      : 'UrduGPT - Magnates Empire';
+
     const loadMessages = async () => {
       try {
         const storedMessages = await storageManager.getMessages();
@@ -40,7 +45,7 @@ function App() {
 
     loadMessages();
     storageManager.clearOldMessages();
-  }, []);
+  }, [messages.length]);
 
   useEffect(() => {
     if (chatAreaRef.current) {
@@ -138,9 +143,9 @@ function App() {
 
       <main className="min-h-screen transition-all duration-300 ease-in-out">
         <div className="h-screen flex flex-col">
-          <div className="bg-[#001F3F]/80 backdrop-blur-sm p-4 pl-20 flex items-center min-h-[4rem] border-b border-white/10">
+          <header className="bg-[#001F3F]/80 backdrop-blur-sm p-4 pl-20 flex items-center min-h-[4rem] border-b border-white/10">
             <h1 className="text-2xl font-bold text-white">UrduGPT</h1>
-          </div>
+          </header>
 
           <div 
             ref={chatAreaRef}
