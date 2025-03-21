@@ -144,7 +144,7 @@ function App() {
       <main className="min-h-screen transition-all duration-300 ease-in-out">
         <div className="h-screen flex flex-col">
           <header className="bg-[#001F3F]/80 backdrop-blur-sm p-4 pl-20 flex items-center min-h-[4rem] border-b border-white/10">
-            <h1 className="text-2xl font-bold text-white">اردوGPT</h1>
+            <h1 className="text-2xl font-bold text-white">UrduGPT</h1>
           </header>
 
           <div 
